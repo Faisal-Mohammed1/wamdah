@@ -1,87 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import './AdminDashboard.css'; // You can style this later
+import './AdminDashboard.css';
 
 const AdminDashboard = () => {
-  const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingMembers, setPendingMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Fetch pending users when the component loads
+  // Fetch pending members when the component loads
   useEffect(() => {
-    fetchPendingRequests();
+    fetchPendingMembers();
   }, []);
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingMembers = async () => {
     try {
-      // Replace with your actual PHP API endpoint URL
-const response = await fetch('http://localhost:5000/api/get_pending_members');      const data = await response.json();
-      setPendingRequests(data);
-      setLoading(false);
+      const response = await fetch('http://localhost:5000/api/get_pending_members');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPendingMembers(data);
+      } else {
+        setMessage({ text: 'فشل في جلب البيانات.', type: 'error' });
+      }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching members:", error);
+      setMessage({ text: 'حدث خطأ في الاتصال بالخادم.', type: 'error' });
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleAction = async (userId, action) => {
+  // Handle Approve or Reject
+  const handleUpdateStatus = async (id, newStatus) => {
     try {
-const response = await fetch('http://localhost:5000/api/update_member_status', {            method: 'POST',
+      const response = await fetch('http://localhost:5000/api/update_member_status', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: userId, status: action }),
+        body: JSON.stringify({ id: id, status: newStatus }),
       });
 
       if (response.ok) {
-        // Remove the processed user from the UI
-        setPendingRequests(pendingRequests.filter(req => req.id !== userId));
+        // Show success message
+        setMessage({ 
+          text: `تم ${newStatus === 'approved' ? 'قبول' : 'رفض'} العضو بنجاح.`, 
+          type: 'success' 
+        });
+        
+        // Remove the member from the UI instantly without reloading the page
+        setPendingMembers(pendingMembers.filter(member => member.id !== id));
+        
+        // Clear message after 3 seconds
+        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
       } else {
-        alert("حدث خطأ أثناء تحديث الحالة"); // Error updating status
+        setMessage({ text: 'حدث خطأ أثناء تحديث الحالة.', type: 'error' });
       }
     } catch (error) {
       console.error("Error updating status:", error);
+      setMessage({ text: 'حدث خطأ في الاتصال بالخادم.', type: 'error' });
     }
   };
 
-  if (loading) return <div dir="rtl">جاري التحميل...</div>;
-
   return (
-    <div className="admin-container" dir="rtl">
-      <h2>لوحة تحكم الإدارة - طلبات العضوية المعلقة</h2>
-      
-      {pendingRequests.length === 0 ? (
-        <p>لا توجد طلبات معلقة حالياً.</p> // No pending requests currently
+    <div className="dashboard-wrapper" dir="rtl">
+      <div className="dashboard-header">
+        <h2>لوحة تحكم الإدارة</h2>
+        <p>مراجعة طلبات العضوية الجديدة</p>
+      </div>
+
+      {message.text && (
+        <div className={`alert alert-${message.type}`}>
+          {message.text}
+        </div>
+      )}
+
+      {loading ? (
+        <p className="loading-text">جاري تحميل الطلبات...</p>
+      ) : pendingMembers.length === 0 ? (
+        <div className="empty-state">
+          <p>لا توجد طلبات عضوية معلقة حالياً.</p>
+        </div>
       ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>الاسم</th>
-              <th>رقم الهوية</th>
-              <th>البريد الإلكتروني</th>
-              <th>الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingRequests.map((request) => (
-              <tr key={request.id}>
-                <td>{request.name}</td>
-                <td>{request.national_id}</td>
-                <td>{request.email}</td>
-                <td className="action-buttons">
-                  <button 
-                    className="btn-approve" 
-                    onClick={() => handleAction(request.id, 'approved')}>
-                    موافقة
-                  </button>
-                  <button 
-                    className="btn-reject" 
-                    onClick={() => handleAction(request.id, 'rejected')}>
-                    رفض
-                  </button>
-                </td>
+        <div className="table-container">
+          <table className="members-table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>رقم الهوية</th>
+                <th>البريد الإلكتروني</th>
+                <th>الإجراءات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pendingMembers.map((member) => (
+                <tr key={member.id}>
+                  <td>{member.name}</td>
+                  <td>{member.national_id}</td>
+                  <td>{member.email}</td>
+                  <td className="actions-cell">
+                    <button 
+                      className="btn-approve"
+                      onClick={() => handleUpdateStatus(member.id, 'approved')}
+                    >
+                      قبول
+                    </button>
+                    <button 
+                      className="btn-reject"
+                      onClick={() => handleUpdateStatus(member.id, 'rejected')}
+                    >
+                      رفض
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const bcrypt = require('bcrypt'); // <-- Added bcrypt for security
 require('dotenv').config();
 
 const app = express();
@@ -11,10 +12,10 @@ app.use(express.json()); // Allow server to parse JSON data from forms
 
 // MySQL Database Connection Pool
 const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'club_ticketing',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -36,27 +37,36 @@ app.get('/', (req, res) => {
 });
 
 // Register a new member (API Route)
-app.post('/api/register', (req, res) => {
-  // Extract data sent from the React frontend
-  const { fullName, memberId, email, phone } = req.body;
+app.post('/api/register', async (req, res) => { // <-- Added async here
+  // Extract data sent from the React frontend (Now includes password)
+  const { fullName, memberId, email, phone, password } = req.body;
 
-  // MySQL query to insert the new member
-  const query = 'INSERT INTO Member (fullName, nationalID, email, phone) VALUES (?, ?, ?, ?)';
+  try {
+    // 1. Secure the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  db.query(query, [fullName, memberId, email, phone], (err, result) => {
-    if (err) {
-      console.error('Database insertion error:', err);
-      
-      // If the email or ID is already in the database, send a specific error
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(400).json({ message: 'رقم الهوية أو البريد الإلكتروني مسجل مسبقاً.' });
+    // 2. MySQL query to insert the new member with the hashed password
+    const query = 'INSERT INTO users (full_name, national_id, email, phone, password_hash) VALUES (?, ?, ?, ?, ?)';
+
+    db.query(query, [fullName, memberId, email, phone, hashedPassword], (err, result) => {
+      if (err) {
+        console.error('Database insertion error:', err);
+        
+        // If the email or ID is already in the database, send a specific error
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ message: 'رقم الهوية أو البريد الإلكتروني مسجل مسبقاً.' });
+        }
+        return res.status(500).json({ message: 'حدث خطأ في الخادم.' });
       }
-      return res.status(500).json({ message: 'حدث خطأ في الخادم.' });
-    }
-    
-    // Success response
-    res.status(201).json({ message: 'تم تقديم الطلب بنجاح! بانتظار موافقة الإدارة.' });
-  });
+      
+      // Success response
+      res.status(201).json({ message: 'تم تقديم الطلب بنجاح! بانتظار موافقة الإدارة.' });
+    });
+  } catch (error) {
+    console.error("Password encryption error:", error);
+    res.status(500).json({ message: 'حدث خطأ أثناء تأمين البيانات.' });
+  }
 });
 
 // Update Member Status (API Route)
@@ -67,8 +77,8 @@ app.post('/api/update_member_status', (req, res) => {
         return res.status(400).json({ message: "Incomplete data provided." });
     }
 
-    // Changed 'members' to 'Member' to match your register route
-    const query = 'UPDATE Member SET status = ? WHERE id = ?';
+    // Update status in the 'users' table
+    const query = 'UPDATE users SET status = ? WHERE id = ?';
     
     db.query(query, [status, id], (err, result) => {
         if (err) {
@@ -81,8 +91,8 @@ app.post('/api/update_member_status', (req, res) => {
 
 // Fetch pending members (API Route)
 app.get('/api/get_pending_members', (req, res) => {
-    // We only want members where status is 'Pending'
-    const query = "SELECT memberID as id, fullName as name, nationalID as national_id, email FROM Member WHERE status = 'Pending'";
+    // Fetch from 'users' where status is lowercase 'pending'
+    const query = "SELECT id, full_name as name, national_id, email FROM users WHERE status = 'pending'";
     
     db.query(query, (err, results) => {
         if (err) {
@@ -93,18 +103,19 @@ app.get('/api/get_pending_members', (req, res) => {
     });
 });
 
-
 // Member Login (API Route)
 app.post('/api/login', (req, res) => {
-    const { nationalId, email } = req.body;
+    // We now extract nationalId and password from the frontend request
+    const { nationalId, password } = req.body;
 
-    if (!nationalId || !email) {
-        return res.status(400).json({ message: 'الرجاء إدخال رقم الهوية والبريد الإلكتروني.' });
+    if (!nationalId || !password) {
+        return res.status(400).json({ message: 'الرجاء إدخال رقم الهوية وكلمة المرور.' });
     }
 
-    const query = 'SELECT * FROM Member WHERE nationalID = ? AND email = ?';
+    // Find the user by National ID
+    const query = 'SELECT * FROM users WHERE national_id = ?';
 
-    db.query(query, [nationalId, email], (err, results) => {
+    db.query(query, [nationalId], async (err, results) => { // <-- Added async here
         if (err) {
             console.error('Database query error:', err);
             return res.status(500).json({ message: 'حدث خطأ في الخادم.' });
@@ -116,25 +127,39 @@ app.post('/api/login', (req, res) => {
 
         const user = results[0];
 
-        // Check the user's approval status
-        if (user.status === 'Pending') {
-            return res.status(403).json({ message: 'حسابك قيد المراجعة من قبل الإدارة.' });
-        } else if (user.status === 'rejected') {
-            return res.status(403).json({ message: 'نعتذر، تم رفض طلب العضوية الخاص بك.' });
-        }
-
-        res.status(200).json({ 
-            message: 'تم تسجيل الدخول بنجاح',
-            user: {
-                id: user.memberID,
-                name: user.fullName,
-                email: user.email,
-                status: user.status
+        try {
+            // Check if the typed password matches the encrypted one in the DB
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            
+            if (!isMatch) {
+                return res.status(401).json({ message: 'بيانات الدخول غير صحيحة.' });
             }
-        });
+
+            // Check the user's approval status
+            if (user.status === 'pending') {
+                return res.status(403).json({ message: 'حسابك قيد المراجعة من قبل الإدارة.' });
+            } else if (user.status === 'rejected') {
+                return res.status(403).json({ message: 'نعتذر، تم رفض طلب العضوية الخاص بك.' });
+            }
+
+            // Success! Send back the user data
+            res.status(200).json({ 
+                message: 'تم تسجيل الدخول بنجاح',
+                user: {
+                    id: user.id,
+                    name: user.full_name,
+                    email: user.email,
+                    national_id: user.national_id,
+                    status: user.status,
+                    role: user.role
+                }
+            });
+        } catch (error) {
+            console.error("Password comparison error:", error);
+            res.status(500).json({ message: 'حدث خطأ أثناء التحقق من البيانات.' });
+        }
     });
 });
-
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -1,51 +1,50 @@
--- Database Name: club_ticketing
+-- Create and use the database FIRST
+CREATE DATABASE IF NOT EXISTS club_ticketing;
+USE club_ticketing;
 
--- Create MEMBER Table
-CREATE TABLE Member (
-    memberID INT AUTO_INCREMENT PRIMARY KEY,
-    fullName VARCHAR(255) NOT NULL,
-    nationalID VARCHAR(50) UNIQUE NOT NULL,
+-- 1. Users Table (Combines Members and Admins)
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    national_id VARCHAR(50) UNIQUE, 
     email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    phone VARCHAR(20),
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('member', 'gate_admin', 'super_admin') DEFAULT 'member',
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Create ADMIN Table
-CREATE TABLE Admin (
-    adminID INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    passwordHash VARCHAR(255) NOT NULL,
-    role ENUM('SuperAdmin', 'GateAdmin') DEFAULT 'GateAdmin'
+-- 2. Events Table (Matches or Gatherings)
+CREATE TABLE events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL, 
+    description TEXT,
+    event_date DATETIME NOT NULL,
+    venue VARCHAR(255) NOT NULL,
+    total_tickets INT NOT NULL,
+    available_tickets INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Create MATCH Table
-CREATE TABLE MatchEvent (
-    matchID INT AUTO_INCREMENT PRIMARY KEY,
-    teams VARCHAR(255) NOT NULL,
-    matchDate DATETIME NOT NULL,
-    location VARCHAR(255) NOT NULL,
-    totalTickets INT NOT NULL
+-- 3. Tickets Table (Includes the QRCode!)
+CREATE TABLE tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    qr_code VARCHAR(255) UNIQUE NOT NULL, 
+    status ENUM('active', 'used', 'cancelled') DEFAULT 'active',
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Create TICKET Table
-CREATE TABLE Ticket (
-    ticketID INT AUTO_INCREMENT PRIMARY KEY,
-    matchID INT,
-    memberID INT,
-    status ENUM('Valid', 'Used', 'Cancelled') DEFAULT 'Valid',
-    QRCode VARCHAR(255) UNIQUE NOT NULL,
-    FOREIGN KEY (matchID) REFERENCES MatchEvent(matchID) ON DELETE CASCADE,
-    FOREIGN KEY (memberID) REFERENCES Member(memberID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Create ATTENDANCE LOG Table
-CREATE TABLE AttendanceLog (
-    logID INT AUTO_INCREMENT PRIMARY KEY,
-    memberID INT,
-    matchID INT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (memberID) REFERENCES Member(memberID) ON DELETE CASCADE,
-    FOREIGN KEY (matchID) REFERENCES MatchEvent(matchID) ON DELETE CASCADE
+-- 4. Attendance Log (Excellent addition for tracking)
+CREATE TABLE attendance_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

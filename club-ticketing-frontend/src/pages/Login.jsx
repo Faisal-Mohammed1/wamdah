@@ -6,14 +6,21 @@ import './Login.css';
 const Login = () => {
   const [credentials, setCredentials] = useState({
     nationalId: '',
-    email: ''
+    password: '' // Changed from email to password
   });
   const [message, setMessage] = useState({ text: '', type: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Validate National ID on login too
+    if (name === 'nationalId') {
+      if (!/^\d*$/.test(value) || value.length > 10) return;
+    }
+
+    setCredentials({ ...credentials, [name]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -24,9 +31,7 @@ const Login = () => {
     try {
       const response = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
 
@@ -34,15 +39,15 @@ const Login = () => {
 
       if (response.ok) {
         setMessage({ text: 'تم تسجيل الدخول بنجاح! جاري التوجيه...', type: 'success' });
-        
-        // Save user info to local storage so the app remembers them
         localStorage.setItem('user', JSON.stringify(data.user));
         
-        // Redirect to a member dashboard or home page after a short delay
         setTimeout(() => {
-          navigate('/'); 
+          if (data.user.role === 'super_admin' || data.user.role === 'gate_admin') {
+            navigate('/admin'); 
+          } else {
+            navigate('/dashboard'); 
+          }
         }, 1500);
-
       } else {
         setMessage({ text: data.message, type: 'error' });
       }
@@ -71,26 +76,12 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label>رقم الهوية</label>
-            <input 
-              type="text" 
-              name="nationalId" 
-              value={credentials.nationalId} 
-              onChange={handleChange} 
-              required 
-              placeholder="أدخل رقم الهوية الوطنية"
-            />
+            <input type="text" name="nationalId" value={credentials.nationalId} onChange={handleChange} required placeholder="أدخل رقم الهوية (10 أرقام)" />
           </div>
 
           <div className="form-group">
-            <label>البريد الإلكتروني</label>
-            <input 
-              type="email" 
-              name="email" 
-              value={credentials.email} 
-              onChange={handleChange} 
-              required 
-              placeholder="example@email.com"
-            />
+            <label>كلمة المرور</label>
+            <input type="password" name="password" value={credentials.password} onChange={handleChange} required placeholder="أدخل كلمة المرور" />
           </div>
 
           <button type="submit" className="btn-submit" disabled={isSubmitting}>
