@@ -102,6 +102,13 @@ const MemberDashboard = () => {
           <div className="events-grid">
             {events.map(event => (
               <div key={event.id} className="event-card">
+                {event.image_url && (
+    <img 
+      src={event.image_url} 
+      alt={event.title} 
+      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '5px', marginBottom: '15px' }} 
+    />
+  )}
                 <h4>{event.title}</h4>
                 {event.description && <p className="event-desc">{event.description}</p>}
                 

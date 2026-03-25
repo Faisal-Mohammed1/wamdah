@@ -1,179 +1,93 @@
-.dashboard-wrapper {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
+/* --- Admin Dashboard Overrides --- */
+.admin-dashboard-override {
+  max-width: 1200px;
 }
 
-.dashboard-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.dashboard-header h2 {
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.dashboard-header p {
-  color: #666;
-}
-
-.table-container {
-  overflow-x: auto;
+.admin-header-container {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  padding: 20px 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-bottom: 25px;
+  border-top: 5px solid #dc3545; /* Red border to signify admin zone */
 }
 
-.members-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: right;
-}
-
-.members-table th, .members-table td {
-  padding: 15px;
-  border-bottom: 1px solid #eee;
-}
-
-.members-table th {
-  background-color: #f8f9fa;
-  color: #333;
-  font-weight: bold;
-}
-
-.members-table tr:hover {
-  background-color: #f1f1f1;
-}
-
-.actions-cell {
+.header-content {
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.btn-approve {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+.header-content h2 { margin: 0; color: #dc3545; }
+.header-content p { margin: 5px 0 0 0; color: #666; }
 
-.btn-approve:hover {
-  background-color: #218838;
-}
-
-.btn-reject {
+.btn-logout {
   background-color: #dc3545;
   color: white;
   border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
+  padding: 10px 20px;
+  border-radius: 5px;
   cursor: pointer;
+  font-weight: bold;
   transition: background 0.3s;
 }
 
-.btn-reject:hover {
-  background-color: #c82333;
-}
+.btn-logout:hover { background-color: #c82333; }
 
-.empty-state, .loading-text {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  background: #f8f9fa;
+/* --- Attendee Tracking Section --- */
+.admin-event-card {
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+  background-color: #fafafa;
 }
 
-
-.dashboard-wrapper {
-  max-width: 1200px; 
+.event-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.admin-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 30px;
-}
-
-@media (min-width: 900px) {
-  .admin-grid {
-    grid-template-columns: 1fr 1fr; /* Puts forms side-by-side on large screens */
-  }
-}
-
-.admin-section {
-  background: white;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.admin-section h3 {
-  margin-top: 0;
+.event-info-header h4 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
   color: #333;
 }
 
-.divider {
-  border: 0;
-  height: 1px;
-  background: #eee;
-  margin-bottom: 20px;
+.ticket-stats {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
 }
 
-.event-form .form-group {
-  margin-bottom: 15px;
-  text-align: right;
+.ticket-stats strong {
+  color: #28a745;
+  font-size: 1.1rem;
 }
 
-.event-form label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
-  font-size: 0.9rem;
-}
-
-.event-form input, .event-form textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-family: inherit;
-  box-sizing: border-box; /* Ensures padding doesn't break width */
-}
-
-.form-row {
-  display: flex;
-  gap: 15px;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
-.btn-submit {
-  width: 100%;
-  padding: 12px;
-  background-color: #0056b3; /* Primary Club Color */
+.btn-view-attendees {
+  background-color: #0056b3;
   color: white;
   border: none;
+  padding: 8px 15px;
   border-radius: 5px;
-  font-size: 1rem;
-  font-weight: bold;
   cursor: pointer;
   transition: background 0.3s;
-  margin-top: 10px;
 }
 
-.btn-submit:hover:not(:disabled) {
-  background-color: #004494;
+.btn-view-attendees:hover { background-color: #004494; }
+
+.attendees-dropdown {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #ccc;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-.btn-submit:disabled {
-  background-color: #a0c4ff;
-  cursor: not-allowed;
+.attendees-table th { background-color: #e9ecef; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

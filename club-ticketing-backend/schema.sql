@@ -15,11 +15,12 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 2. Events Table (Matches or Gatherings)
+-- 2. Events Table (Updated with image_url!)
 CREATE TABLE events (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL, 
     description TEXT,
+    image_url VARCHAR(1000) DEFAULT NULL, -- <-- Added this field!
     event_date DATETIME NOT NULL,
     venue VARCHAR(255) NOT NULL,
     total_tickets INT NOT NULL,
@@ -27,7 +28,7 @@ CREATE TABLE events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 3. Tickets Table (Includes the QRCode!)
+-- 3. Tickets Table
 CREATE TABLE tickets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -39,7 +40,7 @@ CREATE TABLE tickets (
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 4. Attendance Log (Excellent addition for tracking)
+-- 4. Attendance Log 
 CREATE TABLE attendance_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,

@@ -6,9 +6,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import AdminLogin from './pages/AdminLogin'; 
 import AdminDashboard from './pages/AdminDashboard';
 import MemberDashboard from './pages/MemberDashboard';
-// Import security wrapper
+
+// Import our security wrapper
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -16,18 +18,19 @@ function App() {
     <Router>
       <div className="app-container" dir="rtl">
         <Routes>
-          {/* Public Routes - Anyone can access these to sign up or log in */}
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
-  <Route path="/register" element={<Register />} />
-  <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin-login" element={<AdminLogin />} /> {/* <-- The exact path! */}
           
-          {/* Protected Member Route - Any logged-in, approved user can access this */}
-      <Route 
-    path="/dashboard" 
-    element={
-      <ProtectedRoute>
-        <MemberDashboard />
-      </ProtectedRoute>
+          {/* Protected Member Route - Only for logged-in users */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <MemberDashboard />
+              </ProtectedRoute>
             } 
           />
 
