@@ -7,7 +7,7 @@ const Home = () => {
   return (
     <div className="home-wrapper" dir="rtl">
       
-      {/* Hero Section with Wave */}
+      { }
       <section className="wave-hero-section">
         <div className="hero-content">
           <h1>مرحباً بكم في نظام تذاكر أعضاء النادي</h1>

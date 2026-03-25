@@ -9,7 +9,7 @@ const Register = () => {
     memberId: '', 
     email: '',
     phone: '',
-    password: '' // Added password field
+    password: '' 
   });
   const [message, setMessage] = useState({ text: '', type: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);

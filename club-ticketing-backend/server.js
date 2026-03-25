@@ -38,7 +38,7 @@ app.get('/', (req, res) => {
 
 // Register a new member (API Route)
 app.post('/api/register', async (req, res) => { // <-- Added async here
-  // Extract data sent from the React frontend (Now includes password)
+  // Extract data sent from the React frontend
   const { fullName, memberId, email, phone, password } = req.body;
 
   try {
@@ -105,7 +105,6 @@ app.get('/api/get_pending_members', (req, res) => {
 
 // Member Login (API Route)
 app.post('/api/login', (req, res) => {
-    // We now extract nationalId and password from the frontend request
     const { nationalId, password } = req.body;
 
     if (!nationalId || !password) {
@@ -161,7 +160,102 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// ==========================================
+// EVENT & MATCH MANAGEMENT ROUTES
+// ==========================================
+
+// 1. Create a new event/match (For Admins)
+app.post('/api/events', (req, res) => {
+    const { title, description, event_date, venue, total_tickets } = req.body;
+
+    // Basic validation
+    if (!title || !event_date || !venue || !total_tickets) {
+        return res.status(400).json({ message: 'الرجاء تعبئة جميع الحقول الأساسية.' });
+    }
+
+    // Insert into the events table. Notice we set available_tickets = total_tickets initially!
+    const query = `
+        INSERT INTO events (title, description, event_date, venue, total_tickets, available_tickets) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.query(query, [title, description, event_date, venue, total_tickets, total_tickets], (err, result) => {
+        if (err) {
+            console.error('Error creating event:', err);
+            return res.status(500).json({ message: 'حدث خطأ أثناء إضافة المباراة.' });
+        }
+        res.status(201).json({ message: 'تمت إضافة الفعالية بنجاح!' });
+    });
+});
+
+// 2. Fetch all upcoming events (For Admins and Members)
+app.get('/api/events', (req, res) => {
+
+    const query = 'SELECT * FROM events ORDER BY event_date ASC';
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching events:', err);
+            return res.status(500).json({ message: 'فشل في جلب بيانات المباريات.' });
+        }
+        res.status(200).json(results);
+    });
+});
+
 const PORT = process.env.PORT || 5000;
+
+// ==========================================
+// TICKET BOOKING ROUTE
+// ==========================================
+
+app.post('/api/book_ticket', (req, res) => {
+    const { user_id, event_id } = req.body;
+
+    if (!user_id || !event_id) {
+        return res.status(400).json({ message: 'بيانات الحجز غير مكتملة.' });
+    }
+
+    // 1. Check if the user already has a ticket for this specific event
+    const checkTicketQuery = 'SELECT * FROM tickets WHERE user_id = ? AND event_id = ?';
+    db.query(checkTicketQuery, [user_id, event_id], (err, ticketResults) => {
+        if (err) return res.status(500).json({ message: 'حدث خطأ أثناء التحقق من التذاكر.' });
+        
+        if (ticketResults.length > 0) {
+            return res.status(400).json({ message: 'لقد قمت بحجز تذكرة لهذه المباراة مسبقاً.' });
+        }
+
+        // 2. Check if the event exists and has available tickets
+        const checkEventQuery = 'SELECT available_tickets FROM events WHERE id = ?';
+        db.query(checkEventQuery, [event_id], (err, eventResults) => {
+            if (err) return res.status(500).json({ message: 'حدث خطأ أثناء التحقق من المباراة.' });
+            if (eventResults.length === 0) return res.status(404).json({ message: 'المباراة غير موجودة.' });
+            
+            const available = eventResults[0].available_tickets;
+            if (available <= 0) {
+                return res.status(400).json({ message: 'عذراً، لقد نفدت جميع تذاكر هذه المباراة.' });
+            }
+
+            // 3. Generate a unique "QR Code" string for the ticket
+            const qrCodeString = `WAMD-${user_id}-${event_id}-${Date.now()}`;
+
+            // 4. Insert the new ticket into the database
+            const insertTicketQuery = 'INSERT INTO tickets (user_id, event_id, qr_code) VALUES (?, ?, ?)';
+            db.query(insertTicketQuery, [user_id, event_id, qrCodeString], (err, insertResult) => {
+                if (err) return res.status(500).json({ message: 'فشل في إصدار التذكرة.' });
+
+                // 5. Decrement the available_tickets count in the events table by 1
+                const updateEventQuery = 'UPDATE events SET available_tickets = available_tickets - 1 WHERE id = ?';
+                db.query(updateEventQuery, [event_id], (err, updateResult) => {
+                    if (err) console.error('Failed to update ticket count:', err);
+                    
+                    // Send success!
+                    res.status(201).json({ message: 'تم حجز التذكرة بنجاح!', qr_code: qrCodeString });
+                });
+            });
+        });
+    });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

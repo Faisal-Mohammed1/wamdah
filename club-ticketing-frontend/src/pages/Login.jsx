@@ -6,7 +6,7 @@ import './Login.css';
 const Login = () => {
   const [credentials, setCredentials] = useState({
     nationalId: '',
-    password: '' // Changed from email to password
+    password: '' 
   });
   const [message, setMessage] = useState({ text: '', type: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);

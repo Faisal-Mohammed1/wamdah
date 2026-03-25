@@ -2,13 +2,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Import all the pages we just built
+// Import all the pages
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import MemberDashboard from './pages/MemberDashboard';
-// Import our new security wrapper
+// Import security wrapper
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {

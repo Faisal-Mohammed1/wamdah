@@ -87,3 +87,93 @@
   background: #f8f9fa;
   border-radius: 8px;
 }
+
+
+.dashboard-wrapper {
+  max-width: 1200px; 
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px;
+}
+
+@media (min-width: 900px) {
+  .admin-grid {
+    grid-template-columns: 1fr 1fr; /* Puts forms side-by-side on large screens */
+  }
+}
+
+.admin-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.admin-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.divider {
+  border: 0;
+  height: 1px;
+  background: #eee;
+  margin-bottom: 20px;
+}
+
+.event-form .form-group {
+  margin-bottom: 15px;
+  text-align: right;
+}
+
+.event-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.event-form input, .event-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: inherit;
+  box-sizing: border-box; /* Ensures padding doesn't break width */
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background-color: #0056b3; /* Primary Club Color */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-top: 10px;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #004494;
+}
+
+.btn-submit:disabled {
+  background-color: #a0c4ff;
+  cursor: not-allowed;
+}
