@@ -81,14 +81,26 @@ app.post('/api/update_member_status', (req, res) => {
     });
 });
 
-// Fetch pending members (API Route)
-app.get('/api/get_pending_members', (req, res) => {
-    const query = "SELECT id, full_name as name, national_id, email FROM users WHERE status = 'pending'";
+// Fetch Approved Members and Ticket Statistics (API Route)
+app.get('/api/members_stats', (req, res) => {
+    
+    const query = `
+        SELECT 
+            u.id, u.full_name as name, u.national_id, 
+            COUNT(t.id) as total_tickets,
+            COALESCE(SUM(CASE WHEN t.status = 'used' THEN 1 ELSE 0 END), 0) as used_tickets,
+            COALESCE(SUM(CASE WHEN t.status = 'active' THEN 1 ELSE 0 END), 0) as active_tickets
+        FROM users u
+        LEFT JOIN tickets t ON u.id = t.user_id
+        WHERE u.status = 'approved' AND u.role = 'member'
+        GROUP BY u.id
+        ORDER BY u.full_name ASC
+    `;
     
     db.query(query, (err, results) => {
         if (err) {
-            console.error("Error fetching pending members:", err);
-            return res.status(500).json({ message: "Failed to fetch pending members." });
+            console.error("Error fetching member stats:", err);
+            return res.status(500).json({ message: "Failed to fetch member statistics." });
         }
         res.status(200).json(results);
     });
