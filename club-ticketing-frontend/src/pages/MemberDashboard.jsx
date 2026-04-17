@@ -5,27 +5,25 @@ import './MemberDashboard.css';
 
 const MemberDashboard = () => {
   const navigate = useNavigate();
-  
-  // Get the logged-in user's data from local storage
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
 
   const [events, setEvents] = useState([]);
+  const [myTickets, setMyTickets] = useState([]); // <-- State to hold user's tickets
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Fetch upcoming matches when the dashboard loads
   useEffect(() => {
-    fetchEvents();
+    if (user) {
+      fetchEvents();
+      fetchMyTickets(); // <-- Fetch tickets on load
+    }
   }, []);
 
   const fetchEvents = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/events');
-      const data = await response.json();
-      if (response.ok) {
-        setEvents(data);
-      }
+      if (response.ok) setEvents(await response.json());
     } catch (error) {
       console.error("Error fetching events:", error);
     } finally {
@@ -33,13 +31,23 @@ const MemberDashboard = () => {
     }
   };
 
+  // ---FETCH TICKETS FUNCTION ---
+  const fetchMyTickets = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/users/${user.id}/tickets`);
+      if (response.ok) setMyTickets(await response.json());
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('user'); // Clear the session
-    navigate('/login'); // Send them back to the login page
+    localStorage.removeItem('user');
+    navigate('/login'); 
   };
 
   const handleBookTicket = async (eventId) => {
-    setMessage({ text: '', type: '' }); // Clear old messages
+    setMessage({ text: '', type: '' }); 
     try {
       const response = await fetch('http://localhost:5000/api/book_ticket', {
         method: 'POST',
@@ -50,10 +58,9 @@ const MemberDashboard = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Show success and the QR code string!
-        setMessage({ text: `🎉 ${data.message} رمز التذكرة: ${data.qr_code}`, type: 'success' });
-        // Refresh the events list so the "Available Tickets" count updates instantly
+        setMessage({ text: `🎉 ${data.message}`, type: 'success' });
         fetchEvents(); 
+        fetchMyTickets(); // <--Refresh their wallet immediately after booking!
       } else {
         setMessage({ text: data.message, type: 'error' });
       }
@@ -62,7 +69,6 @@ const MemberDashboard = () => {
     }
   };
 
-  // Fallback just in case they bypass the router
   if (!user) return null; 
 
   return (
@@ -80,20 +86,43 @@ const MemberDashboard = () => {
         </div>
       )}
 
-      <div className="member-info-card">
-        <h3>معلومات العضوية:</h3>
-        <p><strong>رقم الهوية:</strong> {user.national_id}</p>
-        <p><strong>البريد الإلكتروني:</strong> {user.email}</p>
-        <p>
-          <strong>حالة العضوية: </strong> 
-          <span className={`status-badge ${user.status === 'approved' ? 'status-approved' : 'status-pending'}`}>
-            {user.status === 'approved' ? 'معتمدة' : 'قيد المراجعة'}
-          </span>
-        </p>
-      </div>
+      {/* --- DIGITAL WALLET --- */}
+      {user.status === 'approved' && (
+        <div className="wallet-section">
+          <h3>🎟️ محفظة التذاكر الخاصة بي</h3>
+          <hr className="divider" />
+          
+          {myTickets.length === 0 ? (
+            <p className="empty-text">لا يوجد لديك تذاكر محجوزة حالياً.</p>
+          ) : (
+            <div className="tickets-grid">
+              {myTickets.map((ticket, index) => (
+                <div key={index} className={`ticket-card ${ticket.ticket_status === 'used' ? 'ticket-used' : ''}`}>
+                  <div className="ticket-header">
+                    <h4>{ticket.title}</h4>
+                    <span className="ticket-badge">
+                      {ticket.ticket_status === 'used' ? 'تم الاستخدام' : 'فعالة'}
+                    </span>
+                  </div>
+                  <div className="ticket-body">
+                    <p><strong>التاريخ:</strong> {new Date(ticket.event_date).toLocaleString('ar-SA')}</p>
+                    <p><strong>الملعب:</strong> {ticket.venue}</p>
+                  </div>
+                  <div className="ticket-footer">
+                    <p className="qr-code-text">{ticket.qr_code}</p>
+                    <p className="qr-hint">أبرز هذا الرمز عند البوابة</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="events-section">
-        <h3>المباريات القادمة</h3>
+      {/* --- UPCOMING EVENTS SECTION --- */}
+      <div className="events-section" style={{ marginTop: '40px' }}>
+        <h3>📅 المباريات القادمة</h3>
+        <hr className="divider" />
         {loading ? (
           <p>جاري تحميل المباريات...</p>
         ) : events.length === 0 ? (
@@ -103,21 +132,14 @@ const MemberDashboard = () => {
             {events.map(event => (
               <div key={event.id} className="event-card">
                 {event.image_url && (
-    <img 
-      src={event.image_url} 
-      alt={event.title} 
-      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '5px', marginBottom: '15px' }} 
-    />
-  )}
+                  <img src={event.image_url} alt={event.title} className="event-image" />
+                )}
                 <h4>{event.title}</h4>
                 {event.description && <p className="event-desc">{event.description}</p>}
-                
-                {/* Formatting the date to look nice in Arabic */}
                 <p><strong>التاريخ:</strong> {new Date(event.event_date).toLocaleString('ar-SA')}</p>
                 <p><strong>الملعب:</strong> {event.venue}</p>
                 <p><strong>التذاكر المتبقية:</strong> {event.available_tickets}</p>
 
-                {/* The Booking Button Logic */}
                 <button 
                   className="btn-book" 
                   onClick={() => handleBookTicket(event.id)}

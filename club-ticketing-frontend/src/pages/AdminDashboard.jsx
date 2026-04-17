@@ -8,18 +8,23 @@ const AdminDashboard = () => {
 
   // --- STATE MANAGEMENT ---
   const [pendingMembers, setPendingMembers] = useState([]);
-  const [events, setEvents] = useState([]); // Stores all matches
-  const [attendees, setAttendees] = useState([]); // Stores attendees for a specific match
-  const [selectedEventId, setSelectedEventId] = useState(null); // Tracks which match's attendees we are viewing
+  const [events, setEvents] = useState([]); 
+  const [attendees, setAttendees] = useState([]); 
+  const [selectedEventId, setSelectedEventId] = useState(null); 
   
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Event Creation State (Now includes image_url!)
+  // Event Creation State 
   const [newEvent, setNewEvent] = useState({
     title: '', description: '', image_url: '', event_date: '', venue: '', total_tickets: ''
   });
   const [isCreating, setIsCreating] = useState(false);
+
+  // ---GATE SCANNER STATE ---
+  const [scanInput, setScanInput] = useState('');
+  const [scanResult, setScanResult] = useState(null); // Holds success/error from scanner
+  const [isScanning, setIsScanning] = useState(false);
 
   // --- INITIAL LOAD ---
   useEffect(() => {
@@ -30,7 +35,7 @@ const AdminDashboard = () => {
   // --- LOGOUT HANDLER ---
   const handleLogout = () => {
     localStorage.removeItem('user');
-    navigate('/admin-login'); // Safely redirect back to the staff portal
+    navigate('/admin-login'); 
   };
 
   // --- FETCH FUNCTIONS ---
@@ -101,7 +106,7 @@ const AdminDashboard = () => {
       if (res.ok) {
         setMessage({ text: data.message, type: 'success' });
         setNewEvent({ title: '', description: '', image_url: '', event_date: '', venue: '', total_tickets: '' });
-        fetchAdminEvents(); // Instantly refresh the matches list!
+        fetchAdminEvents(); 
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
       } else {
         setMessage({ text: data.message, type: 'error' });
@@ -110,6 +115,37 @@ const AdminDashboard = () => {
       setMessage({ text: 'حدث خطأ في الاتصال بالخادم.', type: 'error' });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // ---TICKET SCANNER HANDLER ---
+  const handleScanTicket = async (e) => {
+    e.preventDefault();
+    if (!scanInput.trim()) return;
+    
+    setIsScanning(true);
+    setScanResult(null);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/scan_ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_code: scanInput.trim() }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setScanResult({ type: 'success', text: data.message, details: data.attendee });
+        // Optional: refresh attendee list if it's currently open
+        if (selectedEventId) fetchAttendees(selectedEventId);
+      } else {
+        setScanResult({ type: 'error', text: data.message });
+      }
+    } catch (error) {
+      setScanResult({ type: 'error', text: 'فشل الاتصال بجهاز الخادم.' });
+    } finally {
+      setIsScanning(false);
+      setScanInput(''); // Clear input for the next scan
     }
   };
 
@@ -128,6 +164,41 @@ const AdminDashboard = () => {
       </div>
 
       {message.text && <div className={`alert alert-${message.type}`}>{message.text}</div>}
+
+      {/* --- GATE SCANNER --- */}
+      <div className="admin-section scanner-section" style={{ marginBottom: '30px' }}>
+        <div className="scanner-header">
+          <h3>📷 نظام فحص التذاكر (البوابات)</h3>
+          <p>قم بمسح رمز الـ QR أو إدخال الرمز يدوياً</p>
+        </div>
+        
+        <form onSubmit={handleScanTicket} className="scanner-form">
+          <input 
+            type="text" 
+            value={scanInput} 
+            onChange={(e) => setScanInput(e.target.value)} 
+            placeholder="WAMD-XXXX-XXXX-XXXX" 
+            className="scanner-input"
+            autoFocus // Keeps cursor here ready for a physical scanner
+          />
+          <button type="submit" className="btn-scan" disabled={isScanning || !scanInput}>
+            {isScanning ? 'جاري التحقق...' : 'فحص التذكرة'}
+          </button>
+        </form>
+
+        {/* Scanner Results Display */}
+        {scanResult && (
+          <div className={`scan-result-card ${scanResult.type === 'success' ? 'scan-success' : 'scan-error'}`}>
+            <h4>{scanResult.text}</h4>
+            {scanResult.details && (
+              <div className="attendee-details">
+                <p><strong>الاسم:</strong> {scanResult.details.name}</p>
+                <p><strong>المباراة:</strong> {scanResult.details.match}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="admin-grid">
         {/* SECTION 1: ADD NEW MATCH */}
@@ -230,7 +301,7 @@ const AdminDashboard = () => {
                           <tr>
                             <th>الاسم</th>
                             <th>رقم الهوية</th>
-                            <th>رقم الجوال</th>
+                            <th>الحالة</th>
                             <th>رمز التذكرة (QR)</th>
                           </tr>
                         </thead>
@@ -239,7 +310,12 @@ const AdminDashboard = () => {
                             <tr key={index}>
                               <td>{attendee.full_name}</td>
                               <td>{attendee.national_id}</td>
-                              <td>{attendee.phone}</td>
+                              <td>
+                                {/* Shows if ticket was used at the gate */}
+                                <span className={`status-badge ${attendee.ticket_status === 'used' ? 'status-pending' : 'status-approved'}`}>
+                                  {attendee.ticket_status === 'used' ? 'مستخدمة' : 'فعالة'}
+                                </span>
+                              </td>
                               <td style={{ fontFamily: 'monospace', color: '#0056b3' }}>{attendee.qr_code}</td>
                             </tr>
                           ))}

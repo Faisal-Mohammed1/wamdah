@@ -1,14 +1,14 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-const bcrypt = require('bcrypt'); // <-- Added bcrypt for security
+const bcrypt = require('bcrypt'); 
 require('dotenv').config();
 
 const app = express();
 
 // Middleware
-app.use(cors()); // Allow frontend to communicate with backend
-app.use(express.json()); // Allow server to parse JSON data from forms
+app.use(cors()); 
+app.use(express.json()); 
 
 // MySQL Database Connection Pool
 const db = mysql.createPool({
@@ -151,7 +151,6 @@ app.post('/api/login', (req, res) => {
 // EVENT & MATCH MANAGEMENT ROUTES
 // ==========================================
 
-// 1. Create a new event/match (Updated with Image URL)
 app.post('/api/events', (req, res) => {
     const { title, description, image_url, event_date, venue, total_tickets } = req.body;
 
@@ -173,7 +172,6 @@ app.post('/api/events', (req, res) => {
     });
 });
 
-// Fetch all attendees for a specific event
 app.get('/api/events/:id/attendees', (req, res) => {
     const eventId = req.params.id;
     
@@ -195,7 +193,6 @@ app.get('/api/events/:id/attendees', (req, res) => {
     });
 });
 
-// 2. Fetch all upcoming events (For Admins and Members)
 app.get('/api/events', (req, res) => {
     const query = 'SELECT * FROM events ORDER BY event_date ASC';
     
@@ -253,7 +250,87 @@ app.post('/api/book_ticket', (req, res) => {
     });
 });
 
+// ==========================================
+// GATE CHECK-IN & SCANNING ROUTE
+// ==========================================
+
+app.post('/api/scan_ticket', (req, res) => {
+    const { qr_code } = req.body;
+
+    if (!qr_code) {
+        return res.status(400).json({ message: 'لم يتم توفير رمز التذكرة.' });
+    }
+
+    const findTicketQuery = `
+        SELECT t.*, u.full_name, e.title as event_title 
+        FROM tickets t
+        JOIN users u ON t.user_id = u.id
+        JOIN events e ON t.event_id = e.id
+        WHERE t.qr_code = ?
+    `;
+
+    db.query(findTicketQuery, [qr_code], (err, results) => {
+        if (err) return res.status(500).json({ message: 'حدث خطأ في الخادم.' });
+        
+        if (results.length === 0) {
+            return res.status(404).json({ message: '❌ تذكرة غير صالحة أو غير مسجلة بالنظام.' });
+        }
+
+        const ticket = results[0];
+
+        if (ticket.status === 'used') {
+            return res.status(400).json({ message: `⚠️ هذه التذكرة تم استخدامها مسبقاً من قبل: ${ticket.full_name}` });
+        }
+        
+        if (ticket.status === 'cancelled') {
+            return res.status(400).json({ message: '❌ هذه التذكرة ملغاة.' });
+        }
+
+        const updateTicketQuery = "UPDATE tickets SET status = 'used' WHERE id = ?";
+        db.query(updateTicketQuery, [ticket.id], (err) => {
+            if (err) return res.status(500).json({ message: 'حدث خطأ أثناء تحديث حالة التذكرة.' });
+
+            const logAttendanceQuery = 'INSERT INTO attendance_log (user_id, event_id) VALUES (?, ?)';
+            db.query(logAttendanceQuery, [ticket.user_id, ticket.event_id], (err) => {
+                if (err) console.error("Attendance log failed:", err);
+
+                res.status(200).json({
+                    message: '✅ تذكرة صحيحة! تفضل بالدخول.',
+                    attendee: {
+                        name: ticket.full_name,
+                        match: ticket.event_title
+                    }
+                });
+            });
+        });
+    });
+});
+
 const PORT = process.env.PORT || 5000;
+// ==========================================
+// FETCH USER'S DIGITAL TICKETS
+// ==========================================
+
+app.get('/api/users/:id/tickets', (req, res) => {
+    const userId = req.params.id;
+    
+    // Join tickets with events so the user sees the match name and date
+    const query = `
+        SELECT t.qr_code, t.status as ticket_status, e.title, e.event_date, e.venue 
+        FROM tickets t
+        JOIN events e ON t.event_id = e.id
+        WHERE t.user_id = ?
+        ORDER BY e.event_date ASC
+    `;
+    
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('Error fetching user tickets:', err);
+            return res.status(500).json({ message: 'فشل في جلب التذاكر.' });
+        }
+        res.status(200).json(results);
+    });
+});
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
