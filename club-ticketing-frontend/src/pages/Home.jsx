@@ -17,6 +17,9 @@ const Home = () => {
           <div className="cta-buttons">
             <Link to="/register" className="btn btn-primary">تسجيل عضوية جديدة</Link>
             <Link to="/login" className="btn btn-secondary">تسجيل دخول الأعضاء</Link>
+            <Link to="/contact" className="btn btn-secondary">
+ تواصل معنا
+</Link>
           </div>
         </div>
 

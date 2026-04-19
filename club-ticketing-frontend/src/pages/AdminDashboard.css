@@ -174,3 +174,205 @@
   margin: 5px 0;
   font-size: 1.1rem;
 }
+
+/* --- Admin Member Search Bar --- */
+.member-search-input {
+  width: 100%;
+  max-width: 500px;
+  padding: 12px 20px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.member-search-input:focus {
+  border-color: #17a2b8;
+  outline: none;
+  box-shadow: 0 0 8px rgba(23, 162, 184, 0.2);
+}
+/* --- FLOATING INBOX BUTTON--- */
+.floating-inbox-btn {
+  position: fixed;
+  bottom: 40px;
+  right: 40px; 
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #3b82f6; /* Classic envelope blue */
+  border: none;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  transition: transform 0.3s ease;
+}
+
+.floating-inbox-btn:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
+/* The Red Notification Badge */
+.inbox-badge {
+  position: absolute;
+  top: -2px;
+  right: -5px;
+  background-color: #f44336;
+  color: white;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 3px solid white; /* White border to separate from blue envelope */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- INBOX MODAL--- */
+.inbox-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.inbox-modal-card {
+  background: white;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.inbox-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #e1e5eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+}
+
+.inbox-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.4rem;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-close-modal:hover {
+  color: #f44336;
+}
+
+.inbox-body {
+  padding: 20px 30px;
+  overflow-y: auto;
+  background-color: #fafbfc;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.message-item {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e1e5eb;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px dashed #e1e5eb;
+  padding-bottom: 10px;
+}
+
+.sender-name {
+  font-weight: bold;
+  color: #4facfe;
+  font-size: 1.1rem;
+}
+
+.sender-email {
+  color: #777;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.message-content {
+  color: #444;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* --- COLLAPSIBLE SECTION STYLES --- */
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px 0;
+  transition: opacity 0.2s ease;
+  user-select: none; /* Prevents text highlighting when double-clicked */
+}
+
+.collapsible-header:hover {
+  opacity: 0.7;
+}
+
+.collapsible-header h3 {
+  margin: 0;
+}
+
+.toggle-icon {
+  font-size: 1.2rem;
+  color: #0056b3;
+  transition: transform 0.3s ease;
+  /* Rotates the arrow to point left (in RTL) when closed */
+  transform: rotate(90deg); 
+}
+
+.toggle-icon.open {
+  /* Points down when open */
+  transform: rotate(0deg); 
+}
+
+.animation-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}

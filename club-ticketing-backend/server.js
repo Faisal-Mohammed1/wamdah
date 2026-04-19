@@ -343,6 +343,34 @@ app.get('/api/users/:id/tickets', (req, res) => {
         res.status(200).json(results);
     });
 });
+// Public user sends a contact message
+app.post('/api/contact', (req, res) => {
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message) {
+        return res.status(400).json({ message: 'الرجاء تعبئة جميع الحقول.' });
+    }
+
+    const query = 'INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)';
+    db.query(query, [name, email, message], (err) => {
+        if (err) {
+            console.error('Error saving message:', err);
+            return res.status(500).json({ message: 'حدث خطأ أثناء إرسال الرسالة.' });
+        }
+        res.status(201).json({ message: 'تم إرسال رسالتك إلى الإدارة بنجاح!' });
+    });
+});
+// Admin fetches all messages
+app.get('/api/messages', (req, res) => {
+    const query = 'SELECT * FROM contact_messages ORDER BY created_at DESC';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching messages:', err);
+            return res.status(500).json({ message: 'فشل في جلب الرسائل.' });
+        }
+        res.status(200).json(results);
+    });
+});
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -9,7 +9,7 @@ import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin'; 
 import AdminDashboard from './pages/AdminDashboard';
 import MemberDashboard from './pages/MemberDashboard';
-
+import Contact from './pages/Contact';
 // Import our security wrapper
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -22,7 +22,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/admin-login" element={<AdminLogin />} /> {/* <-- The exact path! */}
+          <Route path="/admin-login" element={<AdminLogin />} /> { }
+          <Route path="/contact" element={<Contact />} />
           
           {/* Protected Member Route - Only for logged-in users */}
           <Route 
