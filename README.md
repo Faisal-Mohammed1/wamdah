@@ -17,7 +17,7 @@ Before running the project locally, ensure you have the following installed:
 1. Open XAMPP and start the **MySQL** and **Apache** modules.
 2. Open your browser and navigate to `http://localhost/phpmyadmin`.
 3. Create a new database named `club_ticketing`.
-4. Import the `schema.sql` file located in the project files to generate the `Member`, `Admin`, `MatchEvent`, `Ticket`, and `AttendanceLog` tables.
+4. Import the `schema.sql` file located in the project files to generate the `users`, `attendance_log`, `events`, `tickets`, and `contact_messages` tables.
 
 ## 2. Backend Setup
 1. Open your terminal and navigate to the backend folder:
